@@ -1,0 +1,12 @@
+{
+  "name": "chitkara-gatepass-portal",
+  "version": "1.0.0",
+  "description": "Fast Gatepass Dispatcher for Chitkara University Hostel Portal",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": ["gatepass", "chitkara", "uhostel"],
+  "author": "",
+  "license": "ISC"
+}

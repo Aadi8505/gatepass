@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Chitkara Gatepass Express</title>
+  <meta name="description" content="Fast 1-click Gatepass Portal for Chitkara University UHostel">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <!-- Ambient background glow elements -->
+  <div class="ambient-glow glow-1"></div>
+  <div class="ambient-glow glow-2"></div>
+
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Gatepass Express</h1>
+          <p class="subtitle">Chitkara UHostel Portal</p>
+        </div>
+      </div>
+      <div class="header-status">
+        <div id="serverStatusBadge" class="status-badge checking">
+          <span class="pulse-dot"></span>
+          <span id="serverStatusText">Checking Server...</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Layout -->
+    <main class="main-layout">
+      <!-- Form Section -->
+      <section class="card glass-card main-form-card">
+        <!-- Session Token Section -->
+        <div class="session-section">
+          <div class="section-title-row">
+            <div class="title-with-badge">
+              <label for="ciSessionInput" class="form-label mb-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+                ci_session Cookie
+              </label>
+              <span id="sessionSavedBadge" class="mini-badge is-saved">Saved</span>
+            </div>
+            <button type="button" id="toggleTokenVisibility" class="btn-ghost-sm" title="Toggle visibility" aria-label="Toggle token visibility">
+              <svg id="eyeIcon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          
+          <div class="input-with-action">
+            <input 
+              type="password" 
+              id="ciSessionInput" 
+              placeholder="Paste ci_session cookie value here"
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="button" id="saveSessionBtn" class="btn-action">
+              Save
+            </button>
+          </div>
+          <p class="field-hint">
+            Saved automatically in browser. Stays remembered unless changed.
+          </p>
+        </div>
+
+        <!-- Gatepass Configuration Form -->
+        <form id="gatepassForm" onsubmit="return false;">
+          <!-- 1. Apply For: ONLY 2 OPTIONS (Day 1 or Night 2) -->
+          <div class="form-group">
+            <label class="form-label">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
+              1. Pass Type
+            </label>
+            <div class="pill-radio-group two-options" id="applyForGroup">
+              <label class="pill-option">
+                <input type="radio" name="applyFor" value="1">
+                <div class="pill-content">
+                  <span class="pill-tag">1</span>
+                  <span class="pill-title">Day Pass</span>
+                </div>
+              </label>
+              <label class="pill-option active">
+                <input type="radio" name="applyFor" value="2" checked>
+                <div class="pill-content">
+                  <span class="pill-tag">2</span>
+                  <span class="pill-title">Night Pass</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- 2. Check-Out Date & Time -->
+          <div class="form-group">
+            <div class="group-header">
+              <label class="form-label mb-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+                2. Check-Out (Exit)
+              </label>
+              <div class="quick-chips">
+                <button type="button" class="chip-btn" id="chipOutToday">Today</button>
+                <button type="button" class="chip-btn" id="chipOutTomorrow">Tomorrow</button>
+              </div>
+            </div>
+
+            <div class="dual-inputs">
+              <div class="input-subgroup">
+                <span class="sub-label">Date (DD-MM-YYYY)</span>
+                <div class="date-picker-wrap">
+                  <input type="text" id="dateCheckOut" placeholder="02-10-2026" value="02-10-2026" required inputmode="numeric" />
+                  <input type="date" id="nativeDateCheckOutPicker" class="picker-overlay" title="Pick Date" />
+                </div>
+              </div>
+              <div class="input-subgroup">
+                <span class="sub-label">Time</span>
+                <input type="text" id="checkoutTime" placeholder="5:30am" value="5:30am" required />
+              </div>
+            </div>
+
+            <div class="time-presets" id="outTimePresets">
+              <span class="preset-label">Quick:</span>
+              <button type="button" class="time-chip" data-target="checkoutTime" data-val="5:30am">5:30am</button>
+              <button type="button" class="time-chip" data-target="checkoutTime" data-val="6am">6am</button>
+              <button type="button" class="time-chip" data-target="checkoutTime" data-val="7am">7am</button>
+              <button type="button" class="time-chip" data-target="checkoutTime" data-val="8am">8am</button>
+              <button type="button" class="time-chip" data-target="checkoutTime" data-val="9am">9am</button>
+              <button type="button" class="time-chip" data-target="checkoutTime" data-val="12pm">12pm</button>
+              <button type="button" class="time-chip" data-target="checkoutTime" data-val="2pm">2pm</button>
+            </div>
+          </div>
+
+          <!-- 3. Check-In Date & Time -->
+          <div class="form-group">
+            <div class="group-header">
+              <label class="form-label mb-0">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                3. Check-In (Return)
+              </label>
+              <div class="quick-chips">
+                <button type="button" class="chip-btn" id="chipInSameDay">Same Day</button>
+                <button type="button" class="chip-btn" id="chipInClear">Leave Blank</button>
+              </div>
+            </div>
+
+            <div class="dual-inputs">
+              <div class="input-subgroup">
+                <span class="sub-label">Date</span>
+                <div class="date-picker-wrap">
+                  <input type="text" id="dateCheckIn" placeholder="06-10-2026" value="06-10-2026" inputmode="numeric" />
+                  <input type="date" id="nativeDateCheckInPicker" class="picker-overlay" title="Pick Date" />
+                </div>
+              </div>
+              <div class="input-subgroup">
+                <span class="sub-label">Time</span>
+                <input type="text" id="checkinTime" placeholder="6:30pm" value="6:30pm" required />
+              </div>
+            </div>
+
+            <div class="time-presets" id="inTimePresets">
+              <span class="preset-label">Quick:</span>
+              <button type="button" class="time-chip" data-target="checkinTime" data-val="5pm">5pm</button>
+              <button type="button" class="time-chip" data-target="checkinTime" data-val="6pm">6pm</button>
+              <button type="button" class="time-chip" data-target="checkinTime" data-val="6:30pm">6:30pm</button>
+              <button type="button" class="time-chip" data-target="checkinTime" data-val="7pm">7pm</button>
+              <button type="button" class="time-chip" data-target="checkinTime" data-val="8pm">8pm</button>
+              <button type="button" class="time-chip" data-target="checkinTime" data-val="9pm">9pm</button>
+            </div>
+          </div>
+
+          <!-- 4. Reason -->
+          <div class="form-group">
+            <label class="form-label" for="reasonInput">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              4. Reason
+            </label>
+            <input type="text" id="reasonInput" placeholder="e.g. gatepass, placement, market" value="gatepass" required />
+            <div class="reason-chips" id="reasonChips">
+              <span class="preset-label">Suggestions:</span>
+              <button type="button" class="chip-btn" data-reason="gatepass">gatepass</button>
+              <button type="button" class="chip-btn" data-reason="placement">placement</button>
+              <button type="button" class="chip-btn" data-reason="home visit">home visit</button>
+              <button type="button" class="chip-btn" data-reason="market">market</button>
+              <button type="button" class="chip-btn" data-reason="medical checkup">medical checkup</button>
+              <button type="button" class="chip-btn" data-reason="project work">project work</button>
+            </div>
+          </div>
+
+          <!-- Optional GID Field -->
+          <input type="hidden" id="gidInput" value="" />
+
+          <!-- Form Actions -->
+          <div class="form-actions">
+            <button type="button" id="submitGatepassBtn" class="btn-primary">
+              <span class="btn-text">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+                Send Gatepass Request
+              </span>
+              <span class="btn-spinner hidden"></span>
+            </button>
+            <button type="button" id="copyCurlBtn" class="btn-secondary" title="Copy exact cURL command">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+              </svg>
+              Copy cURL
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- Right / Bottom Column: Response Console -->
+      <section class="card-column">
+        <div class="card glass-card side-card" id="responseCard">
+          <div class="card-title-bar">
+            <h3>
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+              </svg>
+              Response Console
+            </h3>
+            <span id="responseStatusBadge" class="status-tag idle">Idle</span>
+          </div>
+
+          <div class="response-body-wrap" id="responseWrap">
+            <div class="empty-state" id="emptyState">
+              <div class="empty-icon">📡</div>
+              <p>Ready to dispatch request.</p>
+              <p class="text-muted">Chitkara's response status and message will appear here.</p>
+            </div>
+            <div id="responseContent" class="response-content hidden">
+              <div class="response-meta-row">
+                <span id="resMetaCode" class="meta-tag">Code: --</span>
+                <span id="resMetaTime" class="meta-tag">Latency: -- ms</span>
+                <span id="resMetaTimestamp" class="meta-tag">Time: --</span>
+              </div>
+              <div class="code-preview-box">
+                <pre><code id="responseBodyCode">// Response output will appear here</code></pre>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast hidden">
+      <div class="toast-content" id="toastMessage">Notification message</div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
