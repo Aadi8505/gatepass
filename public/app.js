@@ -205,6 +205,18 @@ function initDates() {
   nativeDateCheckInPicker.value = parseDDMMYYYYtoYYYYMMDD(dateCheckIn.value);
 }
 
+// Open Official Portal Mirror via proxy
+function handleOpenPortalMirror() {
+  const token = ciSessionInput.value.trim();
+  if (!token) {
+    showToast('Please enter your ci_session cookie first!', 'error');
+    ciSessionInput.focus();
+    return;
+  }
+  window.open(`/portal-view?session=${encodeURIComponent(token)}`, '_blank');
+  showToast('Opening Official Portal Mirror with your saved session!', 'success');
+}
+
 // Open Chitkara Portal with Cookie Autofill helper
 function handleOpenChitkaraPortal() {
   const token = ciSessionInput.value.trim();
@@ -223,7 +235,7 @@ function handleOpenChitkaraPortal() {
   // 3. Open Portal
   window.open('https://uhostel.chitkarauniversity.edu.in/Gatepass', '_blank');
 
-  showToast('Opening Chitkara Portal! Cookie auto-login script copied to clipboard.', 'success');
+  showToast('Opening Chitkara Portal! Auto-login script copied to clipboard.', 'success');
 }
 
 // Fetch Student Gatepasses List
@@ -410,7 +422,11 @@ function setupEventListeners() {
     }
   });
 
-  // Open Chitkara Portal button
+  // Portal buttons
+  const openPortalMirrorBtn = document.getElementById('openPortalMirrorBtn');
+  if (openPortalMirrorBtn) {
+    openPortalMirrorBtn.addEventListener('click', handleOpenPortalMirror);
+  }
   openChitkaraBtn.addEventListener('click', handleOpenChitkaraPortal);
 
   // Refresh & Fetch Passes buttons

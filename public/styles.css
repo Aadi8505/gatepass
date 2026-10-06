@@ -770,6 +770,12 @@ input[type="password"]:focus {
   box-shadow: 0 0 12px rgba(139, 92, 246, 0.3);
 }
 
+.portal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .btn-external {
   display: inline-flex;
   align-items: center;
@@ -1051,10 +1057,16 @@ input[type="password"]:focus {
     padding: 9px 8px;
   }
 
-  .btn-external {
+  .portal-actions {
     width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+
+  .portal-actions button {
+    flex: 1;
     justify-content: center;
-    padding: 10px;
+    padding: 10px 8px;
   }
 
   .app-header {
