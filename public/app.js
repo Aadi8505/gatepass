@@ -1,6 +1,5 @@
 // Configuration & State
 const STORAGE_KEY_SESSION = 'chitkara_ci_session';
-const DEFAULT_INITIAL_TOKEN = 'v5dpgh2sl7t4oi727sil62t6o0pr5e5j';
 
 // DOM Elements
 const ciSessionInput = document.getElementById('ciSessionInput');
@@ -8,6 +7,21 @@ const saveSessionBtn = document.getElementById('saveSessionBtn');
 const sessionSavedBadge = document.getElementById('sessionSavedBadge');
 const toggleTokenVisibility = document.getElementById('toggleTokenVisibility');
 
+// Tabs
+const tabNewPass = document.getElementById('tabNewPass');
+const tabViewPasses = document.getElementById('tabViewPasses');
+const applyPassContainer = document.getElementById('applyPassContainer');
+const viewPassesContainer = document.getElementById('viewPassesContainer');
+const openChitkaraBtn = document.getElementById('openChitkaraBtn');
+
+// Gatepass List Elements
+const refreshPassesBtn = document.getElementById('refreshPassesBtn');
+const fetchPassesInitBtn = document.getElementById('fetchPassesInitBtn');
+const passesLoading = document.getElementById('passesLoading');
+const passesEmpty = document.getElementById('passesEmpty');
+const passesList = document.getElementById('passesList');
+
+// Form Inputs
 const dateCheckOut = document.getElementById('dateCheckOut');
 const nativeDateCheckOutPicker = document.getElementById('nativeDateCheckOutPicker');
 const checkoutTime = document.getElementById('checkoutTime');
@@ -69,19 +83,26 @@ function showToast(msg, type = 'info') {
   toastNotification.className = `toast ${type}`;
   setTimeout(() => {
     toastNotification.classList.add('hidden');
-  }, 3500);
+  }, 4000);
 }
 
-// Initialize Session Token
+// Initialize Session Token (Default is 100% EMPTY unless saved by user)
 function initSessionToken() {
   const saved = localStorage.getItem(STORAGE_KEY_SESSION);
-  if (saved) {
-    ciSessionInput.value = saved;
+  // Clear any old placeholder token from previous version
+  if (saved === 'v5dpgh2sl7t4oi727sil62t6o0pr5e5j') {
+    localStorage.removeItem(STORAGE_KEY_SESSION);
+    ciSessionInput.value = '';
+    updateSessionBadge(false);
+    return;
+  }
+
+  if (saved && saved.trim()) {
+    ciSessionInput.value = saved.trim();
     updateSessionBadge(true);
   } else {
-    ciSessionInput.value = DEFAULT_INITIAL_TOKEN;
-    localStorage.setItem(STORAGE_KEY_SESSION, DEFAULT_INITIAL_TOKEN);
-    updateSessionBadge(true);
+    ciSessionInput.value = '';
+    updateSessionBadge(false);
   }
 }
 
@@ -114,7 +135,7 @@ async function checkServerHealth() {
 // Get Active applyFor Value: 1 (Day) or 2 (Night)
 function getApplyForValue() {
   const selected = document.querySelector('input[name="applyFor"]:checked');
-  return selected ? selected.value : '1';
+  return selected ? selected.value : '2';
 }
 
 // Build Payload Object
@@ -144,14 +165,14 @@ function generateCurlString() {
   -H 'origin: https://uhostel.chitkarauniversity.edu.in' \\
   -H 'priority: u=0, i' \\
   -H 'referer: https://uhostel.chitkarauniversity.edu.in/Gatepass' \\
-  -H 'sec-ch-ua: "Not;A=Brand";v="8", "Chromium";v="150", "Brave";v="150"' \\
-  -H 'sec-ch-ua-mobile: ?0' \\
-  -H 'sec-ch-ua-platform: "Windows"' \\
+  -H 'sec-ch-ua: "Chromium";v="154", "Brave";v="154", "Not A(Brand";v="99"' \\
+  -H 'sec-ch-ua-mobile: ?1' \\
+  -H 'sec-ch-ua-platform: "Android"' \\
   -H 'sec-fetch-dest: empty' \\
   -H 'sec-fetch-mode: cors' \\
   -H 'sec-fetch-site: same-origin' \\
   -H 'sec-gpc: 1' \\
-  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36' \\
+  -H 'user-agent: Mozilla/5.0 (Linux; Android 16; Pixel 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Mobile Safari/537.36' \\
   -H 'x-requested-with: XMLHttpRequest' \\
   --data-raw '${rawData}'`;
 }
@@ -184,6 +205,169 @@ function initDates() {
   nativeDateCheckInPicker.value = parseDDMMYYYYtoYYYYMMDD(dateCheckIn.value);
 }
 
+// Open Chitkara Portal with Cookie Autofill helper
+function handleOpenChitkaraPortal() {
+  const token = ciSessionInput.value.trim();
+  if (!token) {
+    showToast('Please enter your ci_session cookie first!', 'error');
+    ciSessionInput.focus();
+    return;
+  }
+
+  // 1. Create 1-click cookie script
+  const cookieScript = `document.cookie="ci_session=${token};path=/;domain=.chitkarauniversity.edu.in";location.href="https://uhostel.chitkarauniversity.edu.in/Gatepass";`;
+  
+  // 2. Copy script to clipboard
+  navigator.clipboard.writeText(cookieScript).catch(() => {});
+
+  // 3. Open Portal
+  window.open('https://uhostel.chitkarauniversity.edu.in/Gatepass', '_blank');
+
+  showToast('Opening Chitkara Portal! Cookie auto-login script copied to clipboard.', 'success');
+}
+
+// Fetch Student Gatepasses List
+async function fetchGatepasses() {
+  const token = ciSessionInput.value.trim();
+  if (!token) {
+    showToast('Please enter and save your ci_session cookie first!', 'error');
+    ciSessionInput.focus();
+    return;
+  }
+
+  passesLoading.classList.remove('hidden');
+  passesEmpty.classList.add('hidden');
+  passesList.classList.add('hidden');
+
+  try {
+    const res = await fetch('/api/student-gatepasses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ci_session: token,
+        applyFor: getApplyForValue()
+      })
+    });
+
+    const result = await res.json();
+    passesLoading.classList.add('hidden');
+
+    if (result.sessionExpired) {
+      passesEmpty.classList.remove('hidden');
+      passesEmpty.innerHTML = `
+        <div class="empty-icon">⚠️</div>
+        <p><strong>Session Expired or Invalid!</strong></p>
+        <p class="text-muted text-sm mt-1">Please log into Chitkara UHostel and update your <code>ci_session</code> cookie above.</p>
+      `;
+      showToast('Session expired. Please update your ci_session cookie.', 'error');
+      return;
+    }
+
+    if (!result.success || !result.data || !Array.isArray(result.data.info) || result.data.info.length === 0) {
+      passesEmpty.classList.remove('hidden');
+      passesEmpty.innerHTML = `
+        <div class="empty-icon">📭</div>
+        <p>No gatepasses found on Chitkara portal.</p>
+        <button type="button" class="btn-primary-sm mt-3" onclick="fetchGatepasses()">Try Again</button>
+      `;
+      return;
+    }
+
+    renderGatepasses(result.data.info);
+    showToast(`Loaded ${result.data.info.length} gatepass(es) from Chitkara!`, 'success');
+
+  } catch (err) {
+    passesLoading.classList.add('hidden');
+    passesEmpty.classList.remove('hidden');
+    passesEmpty.innerHTML = `
+      <div class="empty-icon">❌</div>
+      <p>Error connecting to server: ${err.message}</p>
+      <button type="button" class="btn-primary-sm mt-3" onclick="fetchGatepasses()">Retry</button>
+    `;
+    showToast('Failed to load gatepasses', 'error');
+  }
+}
+
+// Helper to strip HTML tags from raw string
+function stripHtml(html) {
+  if (!html) return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || "";
+}
+
+// Render Gatepasses to DOM
+function renderGatepasses(items) {
+  passesList.innerHTML = '';
+  passesEmpty.classList.add('hidden');
+  passesList.classList.remove('hidden');
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'gatepass-item-card';
+
+    // Status parsing
+    const rawStatus = stripHtml(item.status || item.isApproveT || 'Pending');
+    const isApproved = rawStatus.toLowerCase().includes('approved');
+    const isRejected = rawStatus.toLowerCase().includes('rejected');
+    const statusClass = isApproved ? 'status-pill-approved' : (isRejected ? 'status-pill-rejected' : 'status-pill-pending');
+
+    // Leave Type
+    const rawType = stripHtml(item.leaveType || (item.applyFor === '2' ? 'Night Out' : 'Day Pass'));
+
+    // Warden contact
+    const wardenName = item.wardenUserName || stripHtml(item.approveName).split('\n')[0] || 'Warden';
+    const wardenPhone = item.wardenEmployeeNo || '';
+
+    card.innerHTML = `
+      <div class="pass-card-header">
+        <div class="pass-id-wrap">
+          <span class="pass-tag-badge">#${item.gateId || item.tokenId || item.srNo}</span>
+          <span class="pass-type-badge">${rawType}</span>
+        </div>
+        <span class="status-pill ${statusClass}">${rawStatus || 'Pending'}</span>
+      </div>
+
+      <div class="pass-time-grid">
+        <div class="time-block">
+          <span class="time-label">Exit (Out)</span>
+          <span class="time-val">${item.dateCheckOutT || item.dateCheckOut || ''}</span>
+          <span class="time-sub">${item.checkoutDateTime || ''}</span>
+        </div>
+        <div class="time-arrow">➔</div>
+        <div class="time-block">
+          <span class="time-label">Return (In)</span>
+          <span class="time-val">${item.dateCheckInT || item.dateCheckIn || 'Day Pass'}</span>
+          <span class="time-sub">${item.checkinDateTime || ''}</span>
+        </div>
+      </div>
+
+      <div class="pass-detail-row">
+        <span class="detail-label">Reason:</span>
+        <span class="detail-val highlight">${item.reason || stripHtml(item.reasonT) || 'N/A'}</span>
+      </div>
+
+      ${wardenPhone ? `
+      <div class="pass-detail-row">
+        <span class="detail-label">Warden:</span>
+        <span class="detail-val">
+          ${wardenName} 
+          <a href="tel:${wardenPhone}" class="phone-link">📞 ${wardenPhone}</a>
+        </span>
+      </div>
+      ` : ''}
+
+      ${item.studentName ? `
+      <div class="pass-footer-meta">
+        <span>${item.studentName} (${item.rollNo || ''})</span>
+        <span>${item.hostelName || ''} - Room ${item.roomName || ''}</span>
+      </div>
+      ` : ''}
+    `;
+
+    passesList.appendChild(card);
+  });
+}
+
 // Event Listeners Setup
 function setupEventListeners() {
   // Session Save
@@ -195,7 +379,7 @@ function setupEventListeners() {
     }
     localStorage.setItem(STORAGE_KEY_SESSION, val);
     updateSessionBadge(true);
-    showToast('ci_session saved!', 'success');
+    showToast('ci_session saved in browser localStorage!', 'success');
   });
 
   ciSessionInput.addEventListener('input', () => {
@@ -206,6 +390,32 @@ function setupEventListeners() {
   toggleTokenVisibility.addEventListener('click', () => {
     ciSessionInput.type = ciSessionInput.type === 'password' ? 'text' : 'password';
   });
+
+  // Tab switching
+  tabNewPass.addEventListener('click', () => {
+    tabNewPass.classList.add('active');
+    tabViewPasses.classList.remove('active');
+    applyPassContainer.classList.remove('hidden');
+    viewPassesContainer.classList.add('hidden');
+  });
+
+  tabViewPasses.addEventListener('click', () => {
+    tabViewPasses.classList.add('active');
+    tabNewPass.classList.remove('active');
+    applyPassContainer.classList.add('hidden');
+    viewPassesContainer.classList.remove('hidden');
+    // Auto-fetch if token is present
+    if (ciSessionInput.value.trim()) {
+      fetchGatepasses();
+    }
+  });
+
+  // Open Chitkara Portal button
+  openChitkaraBtn.addEventListener('click', handleOpenChitkaraPortal);
+
+  // Refresh & Fetch Passes buttons
+  refreshPassesBtn.addEventListener('click', fetchGatepasses);
+  fetchPassesInitBtn.addEventListener('click', fetchGatepasses);
 
   // Apply For radio changes (Day vs Night)
   document.querySelectorAll('input[name="applyFor"]').forEach(radio => {
