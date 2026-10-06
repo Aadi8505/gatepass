@@ -12,7 +12,6 @@ const tabNewPass = document.getElementById('tabNewPass');
 const tabViewPasses = document.getElementById('tabViewPasses');
 const applyPassContainer = document.getElementById('applyPassContainer');
 const viewPassesContainer = document.getElementById('viewPassesContainer');
-const openChitkaraBtn = document.getElementById('openChitkaraBtn');
 
 // Gatepass List Elements
 const refreshPassesBtn = document.getElementById('refreshPassesBtn');
@@ -205,38 +204,6 @@ function initDates() {
   nativeDateCheckInPicker.value = parseDDMMYYYYtoYYYYMMDD(dateCheckIn.value);
 }
 
-// Open Official Portal Mirror via proxy
-function handleOpenPortalMirror() {
-  const token = ciSessionInput.value.trim();
-  if (!token) {
-    showToast('Please enter your ci_session cookie first!', 'error');
-    ciSessionInput.focus();
-    return;
-  }
-  window.open(`/portal-view?session=${encodeURIComponent(token)}`, '_blank');
-  showToast('Opening Official Portal Mirror with your saved session!', 'success');
-}
-
-// Open Chitkara Portal with Cookie Autofill helper
-function handleOpenChitkaraPortal() {
-  const token = ciSessionInput.value.trim();
-  if (!token) {
-    showToast('Please enter your ci_session cookie first!', 'error');
-    ciSessionInput.focus();
-    return;
-  }
-
-  // 1. Create 1-click cookie script
-  const cookieScript = `document.cookie="ci_session=${token};path=/;domain=.chitkarauniversity.edu.in";location.href="https://uhostel.chitkarauniversity.edu.in/Gatepass";`;
-  
-  // 2. Copy script to clipboard
-  navigator.clipboard.writeText(cookieScript).catch(() => {});
-
-  // 3. Open Portal
-  window.open('https://uhostel.chitkarauniversity.edu.in/Gatepass', '_blank');
-
-  showToast('Opening Chitkara Portal! Auto-login script copied to clipboard.', 'success');
-}
 
 // Fetch Student Gatepasses List
 async function fetchGatepasses() {
@@ -421,13 +388,6 @@ function setupEventListeners() {
       fetchGatepasses();
     }
   });
-
-  // Portal buttons
-  const openPortalMirrorBtn = document.getElementById('openPortalMirrorBtn');
-  if (openPortalMirrorBtn) {
-    openPortalMirrorBtn.addEventListener('click', handleOpenPortalMirror);
-  }
-  openChitkaraBtn.addEventListener('click', handleOpenChitkaraPortal);
 
   // Refresh & Fetch Passes buttons
   refreshPassesBtn.addEventListener('click', fetchGatepasses);

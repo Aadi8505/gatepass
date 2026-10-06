@@ -309,51 +309,6 @@ function handleStudentGatepassList(req, res) {
   });
 }
 
-function handlePortalProxy(req, res, session) {
-  if (!session) {
-    res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
-    res.end('<h3>Error: No session provided</h3><p>Please enter and save your ci_session in the Gatepass portal first.</p>');
-    return;
-  }
-
-  const options = {
-    hostname: 'uhostel.chitkarauniversity.edu.in',
-    port: 443,
-    path: '/Gatepass',
-    method: 'GET',
-    headers: {
-      'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      'cookie': `ci_session=${session.trim()}`,
-      'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36'
-    }
-  };
-
-  const upstreamReq = https.request(options, (upstreamRes) => {
-    if (upstreamRes.statusCode === 302 || upstreamRes.statusCode === 303) {
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end('<div style="font-family:sans-serif;padding:30px;text-align:center;"><h2>⚠️ Session Expired</h2><p>Chitkara redirected to login. Please copy a fresh ci_session cookie.</p></div>');
-      return;
-    }
-
-    let html = '';
-    upstreamRes.on('data', chunk => html += chunk);
-    upstreamRes.on('end', () => {
-      let modifiedHtml = html;
-      if (modifiedHtml.includes('<head>')) {
-        modifiedHtml = modifiedHtml.replace('<head>', '<head><base href="https://uhostel.chitkarauniversity.edu.in/">');
-      }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-      res.end(modifiedHtml);
-    });
-  });
-
-  upstreamReq.on('error', err => {
-    res.writeHead(502, { 'Content-Type': 'text/plain' });
-    res.end('Portal Proxy Error: ' + err.message);
-  });
-
-  upstreamReq.end();
-}
 
 const server = http.createServer((req, res) => {
   // CORS Preflight
@@ -379,11 +334,6 @@ const server = http.createServer((req, res) => {
     return;
   }
 
-  if (url.pathname === '/portal-view' && req.method === 'GET') {
-    const session = url.searchParams.get('session') || '';
-    handlePortalProxy(req, res, session);
-    return;
-  }
 
   if (url.pathname === '/api/health' && req.method === 'GET') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
